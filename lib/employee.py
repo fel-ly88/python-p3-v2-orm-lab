@@ -2,6 +2,7 @@
 from __init__ import CURSOR, CONN
 from department import Department
 
+
 class Employee:
 
     # Dictionary of objects saved to the database.
@@ -18,44 +19,50 @@ class Employee:
             f"<Employee {self.id}: {self.name}, {self.job_title}, " +
             f"Department ID: {self.department_id}>"
         )
+        
+    def reviews(self):
+        """Return all Review instances for this Employee"""
+        from review import Review  # avoid circular import issue
 
+        sql = "SELECT * FROM reviews WHERE employee_id = ?"
+        rows = CURSOR.execute(sql, (self.id,)).fetchall()
+        return [Review.instance_from_db(row) for row in rows]
     @property
     def name(self):
         return self._name
 
     @name.setter
-    def name(self, name):
-        if isinstance(name, str) and len(name):
-            self._name = name
-        else:
-            raise ValueError(
-                "Name must be a non-empty string"
-            )
+    def name(self, value):
+        if not isinstance(value, str):
+            raise ValueError("Name must be a string")
+        if len(value.strip()) == 0:
+            raise ValueError("Name must be longer than 0 characters")
+        self._name = value
 
     @property
     def job_title(self):
         return self._job_title
 
     @job_title.setter
-    def job_title(self, job_title):
-        if isinstance(job_title, str) and len(job_title):
-            self._job_title = job_title
-        else:
-            raise ValueError(
-                "job_title must be a non-empty string"
-            )
+    def job_title(self, value):
+        if not isinstance(value, str):
+            raise ValueError("Job title must be a string")
+        if len(value.strip()) == 0:
+            raise ValueError("Job title must be longer than 0 characters")
+        self._job_title = value
 
     @property
     def department_id(self):
         return self._department_id
 
     @department_id.setter
-    def department_id(self, department_id):
-        if type(department_id) is int and Department.find_by_id(department_id):
-            self._department_id = department_id
-        else:
-            raise ValueError(
-                "department_id must reference a department in the database")
+    def department_id(self, value):
+        CURSOR.execute("SELECT id FROM departments WHERE id = ?", (value,))
+        if not CURSOR.fetchone():
+            raise ValueError("Department ID must exist in departments table")
+        self._department_id = value
+
+
 
     @classmethod
     def create_table(cls):
@@ -186,5 +193,10 @@ class Employee:
         return cls.instance_from_db(row) if row else None
 
     def reviews(self):
+        """Return list of reviews associated with current employee"""
+        from review import Review  # avoid circular import issue
+        sql = "SELECT * FROM reviews WHERE employee_id = ?"
+        rows = CURSOR.execute(sql, (self.id,)).fetchall()
+        return [Review.instance_from_db(row) for row in rows]
         """Return list of reviews associated with current employee"""
         pass
